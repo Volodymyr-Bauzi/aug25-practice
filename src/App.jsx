@@ -19,11 +19,19 @@ const products = productsFromServer.map(product => {
   };
 });
 
-const getFilteredGoods = (goods, { user }) => {
+const getFilteredGoods = (goods, { user, query }) => {
   let filteredGoods = [...goods];
 
   if (user) {
     filteredGoods = filteredGoods.filter(good => good.person === user);
+  }
+
+  const normalizedQuery = query.trim().toLowerCase();
+
+  if (normalizedQuery) {
+    filteredGoods = filteredGoods.filter(good => {
+      return good.name.toLowerCase().includes(normalizedQuery);
+    });
   }
 
   return filteredGoods;
@@ -31,11 +39,14 @@ const getFilteredGoods = (goods, { user }) => {
 
 export const App = () => {
   const [goods] = useState(products);
-  const [people, setPeople] = useState(usersFromServer);
+  const [people] = useState(usersFromServer);
+  const [categories] = useState(categoriesFromServer);
   const [user, setUser] = useState(null);
+  const [query, setQuery] = useState('');
 
   const filteredGoods = getFilteredGoods(goods, {
     user,
+    query,
   });
 
   return (
@@ -77,25 +88,25 @@ export const App = () => {
                   type="text"
                   className="input"
                   placeholder="Search"
-                  value="qwe"
+                  value={query}
+                  onChange={e => setQuery(e.target.value.trimStart())}
                 />
 
                 <span className="icon is-left">
-                  <i
-                    onClick={() => setPeople()}
-                    className="fas fa-search"
-                    aria-hidden="true"
-                  />
+                  <i className="fas fa-search" aria-hidden="true" />
                 </span>
 
-                <span className="icon is-right">
-                  {/* eslint-disable-next-line jsx-a11y/control-has-associated-label */}
-                  <button
-                    data-cy="ClearButton"
-                    type="button"
-                    className="delete"
-                  />
-                </span>
+                {query && (
+                  <span className="icon is-right">
+                    {/* eslint-disable-next-line jsx-a11y/control-has-associated-label */}
+                    <button
+                      data-cy="ClearButton"
+                      type="button"
+                      className="delete"
+                      onClick={() => setQuery('')}
+                    />
+                  </span>
+                )}
               </p>
             </div>
 
@@ -108,28 +119,15 @@ export const App = () => {
                 All
               </a>
 
-              <a
-                data-cy="Category"
-                className="button mr-2 my-1 is-info"
-                href="#/"
-              >
-                Category 1
-              </a>
-
-              <a data-cy="Category" className="button mr-2 my-1" href="#/">
-                Category 2
-              </a>
-
-              <a
-                data-cy="Category"
-                className="button mr-2 my-1 is-info"
-                href="#/"
-              >
-                Category 3
-              </a>
-              <a data-cy="Category" className="button mr-2 my-1" href="#/">
-                Category 4
-              </a>
+              {categories.map(category => (
+                <a
+                  data-cy="Category"
+                  className="button mr-2 my-1 is-info"
+                  href="#/"
+                >
+                  {category.title}
+                </a>
+              ))}
             </div>
 
             <div className="panel-block">
