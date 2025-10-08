@@ -15,13 +15,28 @@ const products = productsFromServer.map(product => {
   return {
     ...product,
     category,
-    user,
+    person: user,
   };
 });
 
+const getFilteredGoods = (goods, { user }) => {
+  let filteredGoods = [...goods];
+
+  if (user) {
+    filteredGoods = filteredGoods.filter(good => good.person === user);
+  }
+
+  return filteredGoods;
+};
+
 export const App = () => {
-  const [goods, setGoods] = useState(products);
+  const [goods] = useState(products);
   const [people, setPeople] = useState(usersFromServer);
+  const [user, setUser] = useState(null);
+
+  const filteredGoods = getFilteredGoods(goods, {
+    user,
+  });
 
   return (
     <div className="section">
@@ -33,12 +48,23 @@ export const App = () => {
             <p className="panel-heading">Filters</p>
 
             <p className="panel-tabs has-text-weight-bold">
-              <a data-cy="FilterAllUsers" href="#/">
+              <a
+                onClick={() => setUser(null)}
+                data-cy="FilterAllUsers"
+                href="#/"
+                className={!user ? 'is-active' : ''}
+              >
                 All
               </a>
 
               {people.map(person => (
-                <a data-cy="FilterAllUsers" href="#/">
+                <a
+                  onClick={() => setUser(person)}
+                  data-cy="FilterAllUsers"
+                  href="#/"
+                  className={person === user ? 'is-active' : ''}
+                  key={person.id}
+                >
                   {person.name}
                 </a>
               ))}
@@ -55,7 +81,11 @@ export const App = () => {
                 />
 
                 <span className="icon is-left">
-                  <i className="fas fa-search" aria-hidden="true" />
+                  <i
+                    onClick={() => setPeople()}
+                    className="fas fa-search"
+                    aria-hidden="true"
+                  />
                 </span>
 
                 <span className="icon is-right">
@@ -172,11 +202,11 @@ export const App = () => {
             </thead>
 
             <tbody>
-              {goods.map(good => {
-                const { category, user } = good;
+              {filteredGoods.map(good => {
+                const { category, person } = good;
 
                 return (
-                  <tr data-cy="Product">
+                  <tr data-cy="Product" key={good.id}>
                     <td className="has-text-weight-bold" data-cy="ProductId">
                       {good.id}
                     </td>
@@ -188,9 +218,9 @@ export const App = () => {
 
                     <td
                       data-cy="ProductUser"
-                      className={`${user.sex === 'm' ? 'has-text-link' : 'has-text-danger'}`}
+                      className={`${person.sex === 'm' ? 'has-text-link' : 'has-text-danger'}`}
                     >
-                      {user.name}
+                      {person.name}
                     </td>
                   </tr>
                 );
