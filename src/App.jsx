@@ -7,6 +7,8 @@ import usersFromServer from './api/users';
 import categoriesFromServer from './api/categories';
 import productsFromServer from './api/products';
 
+const COLUMNS = ['ID', 'Product', 'Category', 'User'];
+
 const products = productsFromServer.map(product => {
   const category = categoriesFromServer.find(
     cat => cat.id === product.categoryId,
@@ -20,7 +22,7 @@ const products = productsFromServer.map(product => {
   };
 });
 
-const getFilteredGoods = (goods, { user, query, selected }) => {
+const getFilteredGoods = (goods, { user, query, selected, sorting }) => {
   let filteredGoods = [...goods];
 
   if (user) {
@@ -41,7 +43,35 @@ const getFilteredGoods = (goods, { user, query, selected }) => {
     });
   }
 
-  console.log(selected.length);
+  if (sorting.column) {
+    filteredGoods.sort((a, b) => {
+      switch (sorting.column) {
+        case 'ID': {
+          return a.id - b.id;
+        }
+
+        case 'Product': {
+          return a.name.localeCompare(b.name);
+        }
+
+        case 'Category': {
+          return a.category.title.localeCompare(b.category.title);
+        }
+
+        case 'User': {
+          return a.person.name.localeCompare(b.person.name);
+        }
+
+        default: {
+          throw new Error('Unknown value in sorting.column');
+        }
+      }
+    });
+  }
+
+  if (sorting.order === 'desc') {
+    filteredGoods.reverse();
+  }
 
   return filteredGoods;
 };
@@ -53,11 +83,17 @@ export const App = () => {
   const [user, setUser] = useState(null);
   const [query, setQuery] = useState('');
   const [selectedCategories, setSelectedCategories] = useState([]);
+  const [sortingColumn, setSortingColumn] = useState(null);
+  const [sortingOrder, setSortingOrder] = useState('asc');
 
   const filteredGoods = getFilteredGoods(goods, {
     user,
     query,
     selected: selectedCategories,
+    sorting: {
+      column: sortingColumn,
+      order: sortingOrder,
+    },
   });
 
   const handleSelectCategory = category => {
@@ -79,6 +115,18 @@ export const App = () => {
   const resetAllFilters = () => {
     setUser(null);
     setQuery('');
+  };
+
+  const handleSorting = newColumn => {
+    if (sortingColumn !== newColumn) {
+      setSortingColumn(newColumn);
+      setSortingOrder('asc');
+    } else if (sortingOrder === 'asc') {
+      setSortingOrder('desc');
+    } else {
+      setSortingColumn(null);
+      setSortingOrder('asc');
+    }
   };
 
   return (
@@ -194,49 +242,36 @@ export const App = () => {
             >
               <thead>
                 <tr>
-                  <th>
-                    <span className="is-flex is-flex-wrap-nowrap">
-                      ID
-                      <a href="#/">
-                        <span className="icon">
-                          <i data-cy="SortIcon" className="fas fa-sort" />
-                        </span>
-                      </a>
-                    </span>
-                  </th>
-
-                  <th>
-                    <span className="is-flex is-flex-wrap-nowrap">
-                      Product
-                      <a href="#/">
-                        <span className="icon">
-                          <i data-cy="SortIcon" className="fas fa-sort-down" />
-                        </span>
-                      </a>
-                    </span>
-                  </th>
-
-                  <th>
-                    <span className="is-flex is-flex-wrap-nowrap">
-                      Category
-                      <a href="#/">
-                        <span className="icon">
-                          <i data-cy="SortIcon" className="fas fa-sort-up" />
-                        </span>
-                      </a>
-                    </span>
-                  </th>
-
-                  <th>
-                    <span className="is-flex is-flex-wrap-nowrap">
-                      User
-                      <a href="#/">
-                        <span className="icon">
-                          <i data-cy="SortIcon" className="fas fa-sort" />
-                        </span>
-                      </a>
-                    </span>
-                  </th>
+                  {COLUMNS.map(column => (
+                    <th key={column}>
+                      <span className="is-flex is-flex-wrap-nowrap">
+                        {column}
+                        <a href="#/" onClick={() => handleSorting(column)}>
+                          <span className="icon">
+                            <i
+                              data-cy="SortIcon"
+                              className={cn(
+                                'fas',
+                                {
+                                  'fa-sort': sortingColumn !== column,
+                                },
+                                {
+                                  'fa-sort-up':
+                                    sortingColumn === column &&
+                                    sortingOrder === 'asc',
+                                },
+                                {
+                                  'fa-sort-down':
+                                    sortingColumn === column &&
+                                    sortingOrder === 'desc',
+                                },
+                              )}
+                            />
+                          </span>
+                        </a>
+                      </span>
+                    </th>
+                  ))}
                 </tr>
               </thead>
 
