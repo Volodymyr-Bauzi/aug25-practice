@@ -1,6 +1,7 @@
 /* eslint-disable jsx-a11y/accessible-emoji */
 import React, { useState } from 'react';
 import './App.scss';
+import cn from 'classnames';
 
 import usersFromServer from './api/users';
 import categoriesFromServer from './api/categories';
@@ -19,7 +20,7 @@ const products = productsFromServer.map(product => {
   };
 });
 
-const getFilteredGoods = (goods, { user, query }) => {
+const getFilteredGoods = (goods, { user, query, selected }) => {
   let filteredGoods = [...goods];
 
   if (user) {
@@ -34,6 +35,14 @@ const getFilteredGoods = (goods, { user, query }) => {
     });
   }
 
+  if (selected.length > 0) {
+    filteredGoods = filteredGoods.filter(good => {
+      return selected.find(item => item.id === good.categoryId);
+    });
+  }
+
+  console.log(selected.length);
+
   return filteredGoods;
 };
 
@@ -43,11 +52,29 @@ export const App = () => {
   const [categories] = useState(categoriesFromServer);
   const [user, setUser] = useState(null);
   const [query, setQuery] = useState('');
+  const [selectedCategories, setSelectedCategories] = useState([]);
 
   const filteredGoods = getFilteredGoods(goods, {
     user,
     query,
+    selected: selectedCategories,
   });
+
+  const handleSelectCategory = category => {
+    if (selectedCategories.includes(category)) {
+      setSelectedCategories(prev => {
+        return prev.filter(item => item.id !== category.id);
+      });
+    } else {
+      setSelectedCategories(prev => {
+        return [...prev, category];
+      });
+    }
+  };
+
+  const isSelected = selectedId => {
+    return selectedCategories.find(category => category.id === selectedId);
+  };
 
   const resetAllFilters = () => {
     setUser(null);
@@ -119,7 +146,10 @@ export const App = () => {
               <a
                 href="#/"
                 data-cy="AllCategories"
-                className="button is-success mr-6 is-outlined"
+                className={cn('button is-success mr-6', {
+                  'is-outlined': selectedCategories.length > 0,
+                })}
+                onClick={() => setSelectedCategories([])}
               >
                 All
               </a>
@@ -127,8 +157,12 @@ export const App = () => {
               {categories.map(category => (
                 <a
                   data-cy="Category"
-                  className="button mr-2 my-1 is-info"
+                  className={cn('button mr-2 my-1', {
+                    'is-info': isSelected(category.id),
+                  })}
                   href="#/"
+                  onClick={() => handleSelectCategory(category)}
+                  key={category.id}
                 >
                   {category.title}
                 </a>
@@ -149,7 +183,7 @@ export const App = () => {
         </div>
 
         <div className="box table-container">
-          {!filteredGoods ? (
+          {!filteredGoods.length > 0 ? (
             <p data-cy="NoMatchingMessage">
               No products matching selected criteria
             </p>
